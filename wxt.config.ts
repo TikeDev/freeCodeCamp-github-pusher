@@ -4,8 +4,8 @@ import { defineConfig } from 'wxt';
 export default defineConfig({
   webExt: {
     binaries: {
-      chrome: '/Applications/Google\ Chrome\ Beta.app', //  Chrome Beta instead of regular Chrome
-      firefox: '/Applications/Firefox\ Developer\ Edition.app', // Firefox Developer Edition instead of regular Firefox
+      chrome: '/Applications/Google\ Chrome Beta.app/Contents/MacOS/Google Chrome\ Beta', //  Chrome Beta instead of regular Chrome
+      firefox: '/Applications/Firefox\ Developer\ Edition.app/Contents/MacOS/firefox', // Firefox Developer Edition instead of regular Firefox
     },
   },
 });
