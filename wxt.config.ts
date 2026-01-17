@@ -2,6 +2,7 @@ import { defineConfig } from 'wxt';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
+  srcDir: 'src',
   webExt: {
     binaries: {
       chrome: '/Applications/Google\ Chrome Beta.app/Contents/MacOS/Google Chrome\ Beta', //  Chrome Beta instead of regular Chrome
