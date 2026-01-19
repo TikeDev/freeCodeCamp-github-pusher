@@ -14,7 +14,6 @@ export default defineConfig({
     chromiumArgs: [
       '--user-data-dir=./.wxt/chrome-data', 
       '--auto-open-devtools-for-tabs',
-      // '--devtools',
       '--same-tab',
       'https://www.freecodecamp.org/learn/daily-coding-challenge/archive', 
 
