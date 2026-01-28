@@ -1,4 +1,6 @@
 import { onMessage, sendMessage } from '@/utils/messaging';  
+import { fCCPageDataObj, parentObserver, observeConfig } from '@/utils/utils';
+
   
 // Watch for page changes to challenge page bc it's a Single Page Application
 const watchPattern = new MatchPattern('*://*.freecodecamp.org/learn/daily-coding-challenge/20*');
@@ -18,7 +20,7 @@ export default defineContentScript({
     let currURL = window.location.href;
     if (watchPattern.includes(currURL)){
       console.log("CODING CHALLENGE PAGE");
-      startChallengeScrape(currURL, os);
+      parentObserver.observe(document.body, observeConfig);
     }
 
     // upon SPA page change to coding challenge, start scraping
@@ -26,7 +28,7 @@ export default defineContentScript({
       console.log("PAGE CHANGE");
       if (watchPattern.includes(newUrl)){
         console.log("CODING CHALLENGE PAGE");
-        startChallengeScrape(newUrl, os);
+        parentObserver.observe(document.body, observeConfig);
       }
     });
   },
@@ -43,9 +45,9 @@ async function startChallengeScrape(newUrl: URL | string, os: string){
   // DOM Page Scraping - Challenge Info
   let date = newUrlStr.split("daily-coding-challenge/")[1].trim();  // YYYY-MM-DD
   let language = document.querySelector('.tabs-row-middle [aria-expanded="true"]')?.textContent.includes('JavaScript') ? 'js': "py";
-  let challengeTitle = document.querySelector('.challenge-title')?.textContent.trim();
-  challengeTitle = challengeTitle?.trim().toLowerCase().replaceAll(' ', '_');   // Nth Fibonacci Number => nth_fibonacci_number
-  let challengeDesc = document.querySelector('.challenge-instructions')?.textContent.trim();
+  // let challengeTitle = document.querySelector('.challenge-title')?.textContent.trim();
+  // challengeTitle = challengeTitle?.trim().toLowerCase().replaceAll(' ', '_');   // Nth Fibonacci Number => nth_fibonacci_number
+  // let challengeDesc = document.querySelector('.challenge-instructions')?.textContent.trim();
   let challengeTests = 'Tests\n' + document.querySelector('.instructions-panel')?.textContent.trim();
 
   
