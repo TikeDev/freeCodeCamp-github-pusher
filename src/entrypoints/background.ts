@@ -24,8 +24,8 @@ export default defineBackground(() => {
 	});
 
 	// authenticate github user
-	onMessage('authenticateGithub', /* async */ (message) => {
-		const {username, octokit} = authenticateGithub();
+	onMessage('authenticateGithub',  async  (message) => {
+		const {username, octokit} = await authenticateGithub();
 		console.log(username);
 		console.dir(octokit);
 		return octokit;

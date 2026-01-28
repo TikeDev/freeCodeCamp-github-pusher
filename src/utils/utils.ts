@@ -1,6 +1,7 @@
 const observeConfig = { attributes: false, childList: true, subtree: true };
 const parentSelector = '.instructions-panel';
 const targetSelectors = ['#content-start', '#description', '.challenge-test-suite'];
+const modalSelector = '#headlessui-portal-root';
 const found = new Set();
 
 interface PageDataObj {
@@ -9,7 +10,8 @@ interface PageDataObj {
   challengeTitle :string,
   challengeDesc :string,
   challengeTests :string,
-  solutionCode :string
+  solutionCode :string,
+  shouldCommitToGithub : boolean
 }; 
 
 const fCCPageDataObj :PageDataObj = {
@@ -18,7 +20,8 @@ const fCCPageDataObj :PageDataObj = {
   challengeTitle:'',
   challengeDesc:'',
   challengeTests:'',
-  solutionCode:''
+  solutionCode:'',
+  shouldCommitToGithub: false
 };  
    
 
@@ -146,8 +149,38 @@ const parentCallback = (mutations, observer) => {
   }
 };
 
+const modalCallback = (mutations, observer) => {
+  console.log('HELLO MODAL CALLBACK');
+
+  for (const mutation of mutations) {
+    if (mutation.type === "childList") {
+      for (const node of mutation.addedNodes){
+        // ignore non-html elements
+        if (!(node instanceof HTMLElement))
+          continue;
+        
+        // modal
+        if (node.matches(modalSelector)){
+          console.log('HELLO FOUND MODAL');
+
+          let codePanel = document.querySelector('.view-lines ');
+          let language = document.querySelector('.react-monaco-editor-container')?.getAttribute('data-mode-id')?.trim();
+          fCCPageDataObj.solutionCode = codePanel?.innerText.trim();
+          fCCPageDataObj.language = language;
+          
+          fCCPageDataObj.shouldCommitToGithub = true;
+          console.dir(fCCPageDataObj);
+
+        }    
+
+      }
+    }
+  }
+}
+
 // Create an observer instance linked to the callback function
 const parentObserver = new MutationObserver(parentCallback);
 const targetsObserver = new MutationObserver(targetsCallback);
+const modalObserver = new MutationObserver(modalCallback);
 
-export { parentObserver, fCCPageDataObj, observeConfig };
+export { parentObserver, modalObserver, fCCPageDataObj, observeConfig };

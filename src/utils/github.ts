@@ -52,6 +52,7 @@ async function getRepoInfo(username: string){
     let oid = repo.repository.ref.target.oid;
     console.dir(oid);
 
+    //pushCommit(oid);
 
     return oid;
 
@@ -62,3 +63,41 @@ async function getRepoInfo(username: string){
   return "Ok";
 
 }
+
+async function pushCommit(oid: string){
+  console.log("PUSHING COMMIT");
+  // GET https://api.github.com/repos/{owner}/{repo}/git/refs/heads/{branch}
+
+  try {
+    const repo  = await octokit?.graphql(
+      `mutation($owner: String!, $repo: String!) {
+        repository(owner: $owner, name: $repo) {
+          ref(qualifiedName: "refs/heads/main") {
+            target {
+              oid
+            }
+          }
+        }
+      }
+    `,
+      {
+        owner:username,
+        repo:"fCC-test-repo"
+      }
+    );
+
+    let oid = repo.repository.ref.target.oid;
+    console.dir(oid);
+
+    return oid;
+
+  } catch (error) {
+    console.log(error);
+  }
+ 
+    return "Ok";
+
+}
+
+
+

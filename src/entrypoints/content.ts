@@ -1,5 +1,5 @@
 import { onMessage, sendMessage } from '@/utils/messaging';  
-import { fCCPageDataObj, parentObserver, observeConfig } from '@/utils/utils';
+import { fCCPageDataObj, parentObserver, modalObserver, observeConfig } from '@/utils/utils';
 
   
 // Watch for page changes to challenge page bc it's a Single Page Application
@@ -12,15 +12,26 @@ export default defineContentScript({
     // content script logic
     console.log('Hello content.');
 
+    // Communicate with background
+    //const sharefCCDataResp = await sendMessage('sharefCCData', fCCPageDataObj);  
+    const octokit = await sendMessage('authenticateGithub');
+
+    fCCPageDataObj.shouldCommitToGithub = false;
+
     // Request background.ts for OS info
     const os = await sendMessage('requestPlatformInfo');
+    let isMac = (os === "mac");
     console.log("Success? Platform: " + os);
 
-    // account for SPA page refreshes
+    // upon SPA page refresh
     let currURL = window.location.href;
     if (watchPattern.includes(currURL)){
       console.log("CODING CHALLENGE PAGE");
+
+      fCCPageDataObj.shouldCommitToGithub = false;
+      fCCPageDataObj.date = currURL.split("daily-coding-challenge/")[1].trim();
       parentObserver.observe(document.body, observeConfig);
+      modalObserver.observe(document.body, observeConfig);      
     }
 
     // upon SPA page change to coding challenge, start scraping
@@ -28,33 +39,12 @@ export default defineContentScript({
       console.log("PAGE CHANGE");
       if (watchPattern.includes(newUrl)){
         console.log("CODING CHALLENGE PAGE");
+
+        fCCPageDataObj.shouldCommitToGithub = false;
+        fCCPageDataObj.date = currURL.split("daily-coding-challenge/")[1].trim();
         parentObserver.observe(document.body, observeConfig);
+        modalObserver.observe(document.body, observeConfig);
       }
     });
   },
 });
-
-
-async function startChallengeScrape(newUrl: URL | string, os: string){
-  console.log('Handling page change match');
-
-  let shouldCommitToGithub = false;
-  let isMac = (os === "mac");
-  let newUrlStr = (newUrl instanceof URL ? newUrl.pathname: newUrl);  
-
-  // DOM Page Scraping - Challenge Info
-  let date = newUrlStr.split("daily-coding-challenge/")[1].trim();  // YYYY-MM-DD
-  let language = document.querySelector('.tabs-row-middle [aria-expanded="true"]')?.textContent.includes('JavaScript') ? 'js': "py";
-  // let challengeTitle = document.querySelector('.challenge-title')?.textContent.trim();
-  // challengeTitle = challengeTitle?.trim().toLowerCase().replaceAll(' ', '_');   // Nth Fibonacci Number => nth_fibonacci_number
-  // let challengeDesc = document.querySelector('.challenge-instructions')?.textContent.trim();
-  let challengeTests = 'Tests\n' + document.querySelector('.instructions-panel')?.textContent.trim();
-
-  
-
-  const sharefCCDataResp = await sendMessage('sharefCCData', fCCPageDataObj);  
-  const octokit = await sendMessage('authenticateGithub');
-  
-
-  console.dir(fCCPageDataObj);
-}

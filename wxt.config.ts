@@ -15,7 +15,7 @@ export default defineConfig({
       '--user-data-dir=./.wxt/chrome-data', 
       '--auto-open-devtools-for-tabs',
       '--same-tab',
-      'https://www.freecodecamp.org/learn/daily-coding-challenge/archive', 
+      'https://www.freecodecamp.org/learn/daily-coding-challenge/2026-01-14', 
 
     ],
   },
