@@ -32,7 +32,8 @@ export default defineContentScript({
   },
 });
 
-function startChallengeScrape(newUrl: URL | string, os: string){
+
+async function startChallengeScrape(newUrl: URL | string, os: string){
   console.log('Handling page change match');
 
   let shouldCommitToGithub = false;
@@ -47,14 +48,11 @@ function startChallengeScrape(newUrl: URL | string, os: string){
   let challengeDesc = document.querySelector('.challenge-instructions')?.textContent.trim();
   let challengeTests = 'Tests\n' + document.querySelector('.instructions-panel')?.textContent.trim();
 
-  let fCCPageDataObj = {
-    date: date,  // YYYY-MM-DD
-    language: language,
-    challengeTitle: challengeTitle,
-    challengeDesc: challengeDesc,
-    challengeTests: challengeTests,
-    solutionCode: '',
-  };    
+  
+
+  const sharefCCDataResp = await sendMessage('sharefCCData', fCCPageDataObj);  
+  const octokit = await sendMessage('authenticateGithub');
+  
 
   console.dir(fCCPageDataObj);
 }
