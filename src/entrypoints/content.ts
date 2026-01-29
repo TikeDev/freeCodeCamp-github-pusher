@@ -20,7 +20,7 @@ export default defineContentScript({
 
     // Request background.ts for OS info
     const os = await sendMessage('requestPlatformInfo');
-    let isMac = (os === "mac");
+    fCCPageDataObj.isMac = (os === "mac");
     console.log("Success? Platform: " + os);
 
     // upon SPA page refresh

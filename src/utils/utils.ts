@@ -11,7 +11,8 @@ interface PageDataObj {
   challengeDesc :string,
   challengeTests :string,
   solutionCode :string,
-  shouldCommitToGithub : boolean
+  shouldCommitToGithub : boolean,
+  isMac : boolean
 }; 
 
 const fCCPageDataObj :PageDataObj = {
@@ -21,9 +22,15 @@ const fCCPageDataObj :PageDataObj = {
   challengeDesc:'',
   challengeTests:'',
   solutionCode:'',
-  shouldCommitToGithub: false
+  shouldCommitToGithub: false,
+  isMac: false
 };  
    
+const handleSubmission = () => {
+  console.log('HANDLING SUBMISSION');
+  fCCPageDataObj.shouldCommitToGithub = true;
+  // before unload?
+};
 
 const targetsCallback = (mutations, observer) => {
   console.log('HELLO TARGETS CALLBACK');
@@ -59,7 +66,7 @@ const targetsCallback = (mutations, observer) => {
       }
     }
   }
-}
+};
 
 // Callback function to execute when mutations are observed
 const parentCallback = (mutations, observer) => {
@@ -171,6 +178,19 @@ const modalCallback = (mutations, observer) => {
           fCCPageDataObj.shouldCommitToGithub = true;
           console.dir(fCCPageDataObj);
 
+          // start listening for submission 
+          // (submit button or keyboard shorcut)
+          const submitBtn = Array.from(node.querySelectorAll('button'))
+            .find(btn => btn.textContent.includes('Go to next challenge (Command + Enter)'));
+
+          submitBtn?.addEventListener('click', handleSubmission);
+          document.addEventListener('keydown', (event) => {
+            // command or ctrl key depending on platform
+            const modifier = fCCPageDataObj.isMac ? event.metaKey: event.ctrlKey;
+            if (modifier && event.key === 'Enter'){
+              handleSubmission();
+            }
+          });
         }    
 
       }
