@@ -2,7 +2,7 @@ import { defineExtensionMessaging } from '@webext-core/messaging';
 
 interface ProtocolMap {
   requestPlatformInfo() :string;
-  sharefCCData(data: Object) :string;
+  shareDataAndPushToGithub(data: Object) :string;
   authenticateGithub() :string;
 }
 

@@ -1,5 +1,5 @@
 import { onMessage, sendMessage } from '@/utils/messaging';  
-import { fCCPageDataObj, parentObserver, modalObserver, observeConfig } from '@/utils/utils';
+import { fCCPageDataObj, parentObserver, modalObserver, observeConfig, setSubmissionCallback } from '@/utils/utils';
 
   
 // Watch for page changes to challenge page bc it's a Single Page Application
@@ -12,8 +12,12 @@ export default defineContentScript({
     // content script logic
     console.log('Hello content.');
 
+    // set submit button callback
+    setSubmissionCallback(
+     () => { sendMessage('shareDataAndPushToGithub', fCCPageDataObj) }
+    );
+
     // Communicate with background
-    //const sharefCCDataResp = await sendMessage('sharefCCData', fCCPageDataObj);  
     const octokit = await sendMessage('authenticateGithub');
 
     fCCPageDataObj.shouldCommitToGithub = false;
@@ -23,12 +27,12 @@ export default defineContentScript({
     fCCPageDataObj.isMac = (os === "mac");
     console.log("Success? Platform: " + os);
 
-    // upon SPA page refresh
+    // upon SPA page refresh/reload
     let currURL = window.location.href;
     if (watchPattern.includes(currURL)){
       console.log("CODING CHALLENGE PAGE");
 
-      fCCPageDataObj.shouldCommitToGithub = false;
+      resetFCCPageDataObj();
       fCCPageDataObj.date = currURL.split("daily-coding-challenge/")[1].trim();
       parentObserver.observe(document.body, observeConfig);
       modalObserver.observe(document.body, observeConfig);      
@@ -38,13 +42,25 @@ export default defineContentScript({
     ctx.addEventListener(window, 'wxt:locationchange', ({ newUrl }) => {
       console.log("PAGE CHANGE");
       if (watchPattern.includes(newUrl)){
+        let newUrlStr = newUrl.toString();
         console.log("CODING CHALLENGE PAGE");
 
-        fCCPageDataObj.shouldCommitToGithub = false;
-        fCCPageDataObj.date = currURL.split("daily-coding-challenge/")[1].trim();
+        resetFCCPageDataObj();
+        fCCPageDataObj.date = newUrlStr.split("daily-coding-challenge/")[1].trim();
         parentObserver.observe(document.body, observeConfig);
         modalObserver.observe(document.body, observeConfig);
       }
     });
   },
 });
+
+function resetFCCPageDataObj(){
+  fCCPageDataObj.date = '';  // YYYY-MM-DD
+  fCCPageDataObj.language = '';
+  fCCPageDataObj.challengeTitle = '';
+  fCCPageDataObj.challengeDesc = '';
+  fCCPageDataObj.challengeTests = '';
+  fCCPageDataObj.solutionCode = '';
+  fCCPageDataObj.shouldCommitToGithub = false;
+// fCCPageDataObj.isMac won't change
+}

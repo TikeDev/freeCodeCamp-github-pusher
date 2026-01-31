@@ -7,7 +7,7 @@ export default defineBackground(() => {
   // background logic
   console.log('Hello background!', { id: browser.runtime.id });
 
-	let fCCDataObj = {};
+	let challengeDataObj = {};
 
 	// need to respond if it's mac (uses cmd key instead of ctrl)
 	onMessage('requestPlatformInfo', async () => {
@@ -17,10 +17,10 @@ export default defineBackground(() => {
 	});
 
 	// receive fCC data from content script
-	onMessage('sharefCCData', /* async */ (message) => {
-		fCCDataObj = message.data;
-		console.log('Background obj');
-		console.dir(fCCDataObj);
+	onMessage('shareDataAndPushToGithub', (message) => {
+		challengeDataObj = message.data;
+		console.log('HELLO ABOUT TO GITHUB PUSH');
+		console.dir(challengeDataObj);		
 	});
 
 	// authenticate github user

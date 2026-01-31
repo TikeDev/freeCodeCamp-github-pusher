@@ -2,6 +2,8 @@ const observeConfig = { attributes: false, childList: true, subtree: true };
 const parentSelector = '.instructions-panel';
 const targetSelectors = ['#content-start', '#description', '.challenge-test-suite'];
 const modalSelector = '#headlessui-portal-root';
+const solutionSelector = '.view-lines';
+const languageSelectors = ['.react-monaco-editor-container', 'data-mode-id']
 const found = new Set();
 
 interface PageDataObj {
@@ -25,11 +27,17 @@ const fCCPageDataObj :PageDataObj = {
   shouldCommitToGithub: false,
   isMac: false
 };  
-   
+
+let submissionCallback: any;
+
+const setSubmissionCallback = (callback: () => void) => {
+  submissionCallback = callback;
+}
+
 const handleSubmission = () => {
   console.log('HANDLING SUBMISSION');
   fCCPageDataObj.shouldCommitToGithub = true;
-  // before unload?
+  submissionCallback();
 };
 
 const targetsCallback = (mutations, observer) => {
@@ -41,6 +49,7 @@ const targetsCallback = (mutations, observer) => {
         if (!(node instanceof HTMLElement))
           continue;
         
+        // check if any targets *appeared*
         // title
         if (node.matches(targetSelectors[0])){
           fCCPageDataObj.challengeTitle = node.innerText.trim();
@@ -56,8 +65,10 @@ const targetsCallback = (mutations, observer) => {
           fCCPageDataObj.challengeTests = 'Tests\n' + node.innerText.trim();
           found.add(targetSelectors[2]);          
         }        
-        // both targets found, stop looking for targets to scrape
+
+        // both targets found, stop looking for targets
         if (found.size === targetSelectors.length){
+          found.clear();
           console.log('HELLO TARGETS FOUND');
           console.dir(fCCPageDataObj);
           
@@ -68,47 +79,51 @@ const targetsCallback = (mutations, observer) => {
   }
 };
 
+const checkAllTargetsExist = (parent) => {
+    targetSelectors.forEach((targetSelector) => {
+      let targetExists = parent.querySelector(targetSelector);
+      if (targetExists instanceof HTMLElement){
+        // title
+        if (targetSelector === targetSelectors[0]){
+          fCCPageDataObj.challengeTitle = targetExists.innerText.trim();
+        }
+        // description
+        else if (targetSelector === targetSelectors[1]){
+          fCCPageDataObj.challengeDesc = targetExists.innerText.trim();
+        }
+        // tests
+        else if (targetSelector === targetSelectors[2]){
+          fCCPageDataObj.challengeTests = 'Tests\n' + targetExists.innerText.trim();
+        }    
+        found.add(targetSelector);
+      }
+    });
+
+     // if targets don't exist, start observing for targets
+    if (found.size < targetSelectors.length)
+      targetsObserver.observe(parent, observeConfig);
+    else{
+      found.clear();
+      console.log('TARGETS FOUND FIRST TRY');
+      console.dir(fCCPageDataObj);
+    } 
+}
+
 // Callback function to execute when mutations are observed
 const parentCallback = (mutations, observer) => {
   console.log('HELLO PARENT CALLBACK');
 
-  // check to see if parent is there before observing
+  // check to see if parent already exists before observing for it
   let parent = document.querySelector(parentSelector);
   if (parent){
     console.log('PARENT FOUND');         
     observer.disconnect();
 
-    targetSelectors.forEach((targetSelector) => {
-      let exists = parent.querySelector(targetSelector);
-      if (exists instanceof HTMLElement){
-        // title
-        if (targetSelector === targetSelectors[0]){
-          fCCPageDataObj.challengeTitle = exists.innerText.trim();
-        }
-        // description
-        else if (targetSelector === targetSelectors[1]){
-          fCCPageDataObj.challengeDesc = exists.innerText.trim();
-        }
-        // tests
-        else if (targetSelector === targetSelectors[2]){
-          fCCPageDataObj.challengeTests = 'Tests\n' + exists.innerText.trim();
-        }    
-        found.add(targetSelector);
-      }
-
-    });
-
-    if (found.size < targetSelectors.length)
-      targetsObserver.observe(parent, observeConfig);
-    else{
-      console.log('TARGETS FOUND FIRST TRY');
-      console.dir(fCCPageDataObj);
-    } 
+    // parent exists, see if any targets exist before observing for targets
+    checkAllTargetsExist(parent);
   }
 
-
-
-  // check for mutations to find parent
+  // check to see if parent appears
   for (const mutation of mutations) {
     if (mutation.type === "childList") {    
       for (const node of mutation.addedNodes){
@@ -123,33 +138,17 @@ const parentCallback = (mutations, observer) => {
           observer.disconnect();
           const parent = node;
 
-          targetSelectors.forEach((targetSelector) => {
-            let exists = parent.querySelector(targetSelector);
-            if (exists instanceof HTMLElement){
-              // title
-              if (targetSelector === targetSelectors[0]){
-                fCCPageDataObj.challengeTitle = exists.innerText.trim();
-              }
-              // description
-              else if (targetSelector === targetSelectors[1]){
-                fCCPageDataObj.challengeDesc = exists.innerText.trim();
-              }
-              // tests
-              else if (targetSelector === targetSelectors[2]){
-                fCCPageDataObj.challengeTests = 'Tests\n' + exists.innerText.trim();
-              }    
-              found.add(targetSelector);
-            }
+          // parent exists, see if any targets exist before observing for targets
+          checkAllTargetsExist(parent);
 
-          });
-
+          // not all targets exist, watch for rest of targets to *appear*
           if (found.size < targetSelectors.length)
             targetsObserver.observe(parent, observeConfig);
-          else{
+          else {          
+            found.clear();
             console.log('TARGETS FOUND FIRST TRY AFTER PARENT FOUND');
             console.dir(fCCPageDataObj);
           }
-
         }
       }
     } 
@@ -170,12 +169,11 @@ const modalCallback = (mutations, observer) => {
         if (node.matches(modalSelector)){
           console.log('HELLO FOUND MODAL');
 
-          let codePanel = document.querySelector('.view-lines ');
-          let language = document.querySelector('.react-monaco-editor-container')?.getAttribute('data-mode-id')?.trim();
+          let codePanel = document.querySelector(solutionSelector);
+          let language = document.querySelector(languageSelectors[0])?.getAttribute(languageSelectors[1])?.trim();
           fCCPageDataObj.solutionCode = codePanel?.innerText.trim();
           fCCPageDataObj.language = language;
           
-          fCCPageDataObj.shouldCommitToGithub = true;
           console.dir(fCCPageDataObj);
 
           // start listening for submission 
@@ -183,24 +181,32 @@ const modalCallback = (mutations, observer) => {
           const submitBtn = Array.from(node.querySelectorAll('button'))
             .find(btn => btn.textContent.includes('Go to next challenge (Command + Enter)'));
 
-          submitBtn?.addEventListener('click', handleSubmission);
+          // submit button click
+          submitBtn?.addEventListener('click', () => {
+            console.log("SUBMIT BUTTON PRESSED")
+            
+            handleSubmission();
+          });
+
+          // submit keyboard shortcut
           document.addEventListener('keydown', (event) => {
             // command or ctrl key depending on platform
             const modifier = fCCPageDataObj.isMac ? event.metaKey: event.ctrlKey;
+
             if (modifier && event.key === 'Enter'){
+              console.log("KEYBOARD COMBO PRESSED")
               handleSubmission();
             }
           });
         }    
-
       }
     }
   }
-}
+};
 
 // Create an observer instance linked to the callback function
 const parentObserver = new MutationObserver(parentCallback);
 const targetsObserver = new MutationObserver(targetsCallback);
 const modalObserver = new MutationObserver(modalCallback);
 
-export { parentObserver, modalObserver, fCCPageDataObj, observeConfig };
+export { parentObserver, modalObserver, fCCPageDataObj, observeConfig, setSubmissionCallback };
