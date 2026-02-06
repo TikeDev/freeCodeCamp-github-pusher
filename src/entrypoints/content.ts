@@ -17,10 +17,9 @@ export default defineContentScript({
      () => { sendMessage('shareDataAndPushToGithub', fCCPageDataObj) }
     );
 
-    // Communicate with background
+    // Request background.ts to authenticate Github acc using PAT
     const octokit = await sendMessage('authenticateGithub');
 
-    fCCPageDataObj.shouldCommitToGithub = false;
 
     // Request background.ts for OS info
     const os = await sendMessage('requestPlatformInfo');

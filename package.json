@@ -18,13 +18,15 @@
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
+    "dotenv": "^17.2.3",
     "typescript": "^5.9.3",
     "wxt": "^0.20.6"
   },
   "dependencies": {
+    "@octokit/graphql-schema": "^15.26.1",
     "@webext-core/messaging": "^2.3.0",
     "@webext-core/storage": "^1.2.0",
-    "dotenv": "^17.2.3",
+    "js-base64": "^3.7.8",
     "octokit": "^5.0.5"
   }
 }

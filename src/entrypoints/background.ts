@@ -1,13 +1,15 @@
 import { onMessage, sendMessage } from '@/utils/messaging';
-import authenticateGithub from '@/utils/github';
-import { localExtStorage } from '@webext-core/storage';
+import { authenticateGithub, pushCommit } from '@/utils/github';
+import PageDataObj from '@/types/challenge';
+// import { localExtStorage } from '@webext-core/storage';
 
 
 export default defineBackground(() => {
   // background logic
   console.log('Hello background!', { id: browser.runtime.id });
 
-	let challengeDataObj = {};
+	let challengeDataObj: PageDataObj;
+	let retryQueue = [];
 
 	// need to respond if it's mac (uses cmd key instead of ctrl)
 	onMessage('requestPlatformInfo', async () => {
@@ -17,15 +19,17 @@ export default defineBackground(() => {
 	});
 
 	// receive fCC data from content script
-	onMessage('shareDataAndPushToGithub', (message) => {
+	onMessage('shareDataAndPushToGithub', async (message) => {
 		challengeDataObj = message.data;
 		console.log('HELLO ABOUT TO GITHUB PUSH');
 		console.dir(challengeDataObj);		
+
+		await pushCommit(challengeDataObj);
 	});
 
 	// authenticate github user
 	onMessage('authenticateGithub',  async  (message) => {
-		const {username, octokit} = await authenticateGithub();
+		const { username, octokit } = await authenticateGithub();
 		console.log(username);
 		console.dir(octokit);
 		return octokit;

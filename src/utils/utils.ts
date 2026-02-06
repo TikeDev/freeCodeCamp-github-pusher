@@ -1,3 +1,5 @@
+import PageDataObj from "@/types/challenge";
+
 const observeConfig = { attributes: false, childList: true, subtree: true };
 const parentSelector = '.instructions-panel';
 const targetSelectors = ['#content-start', '#description', '.challenge-test-suite'];
@@ -5,17 +7,6 @@ const modalSelector = '#headlessui-portal-root';
 const solutionSelector = '.view-lines';
 const languageSelectors = ['.react-monaco-editor-container', 'data-mode-id']
 const found = new Set();
-
-interface PageDataObj {
-  date :string,  // YYYY-MM-DD
-  language :string,
-  challengeTitle :string,
-  challengeDesc :string,
-  challengeTests :string,
-  solutionCode :string,
-  shouldCommitToGithub : boolean,
-  isMac : boolean
-}; 
 
 const fCCPageDataObj :PageDataObj = {
   date:'',  // YYYY-MM-DD
@@ -52,17 +43,23 @@ const targetsCallback = (mutations, observer) => {
         // check if any targets *appeared*
         // title
         if (node.matches(targetSelectors[0])){
-          fCCPageDataObj.challengeTitle = node.innerText.trim();
+          fCCPageDataObj.challengeTitle = node.innerHTML.trim();
           found.add(targetSelectors[0]);
         }
         // description
         if (node.matches(targetSelectors[1])){
-          fCCPageDataObj.challengeDesc = node.innerText.trim();
+          fCCPageDataObj.challengeDesc = node.innerHTML.trim();
           found.add(targetSelectors[1]);          
         }
         // tests
         if (node.matches(targetSelectors[2])){
-          fCCPageDataObj.challengeTests = 'Tests\n' + node.innerText.trim();
+          let items = Array.from(node.querySelectorAll('.test-output span:not(.sr-only)'));
+          //console.dir(items.map((el) => el.innerHTML.trim()));
+          
+          
+          fCCPageDataObj.challengeTests = '<h2>Tests</h2>\n' + '<ul>\n' +
+          items.map((el) => `<li>${el.innerHTML.trim()}</li>`).join("\n") +
+          '\n</ul>';
           found.add(targetSelectors[2]);          
         }        
 
@@ -80,33 +77,38 @@ const targetsCallback = (mutations, observer) => {
 };
 
 const checkAllTargetsExist = (parent) => {
-    targetSelectors.forEach((targetSelector) => {
-      let targetExists = parent.querySelector(targetSelector);
-      if (targetExists instanceof HTMLElement){
-        // title
-        if (targetSelector === targetSelectors[0]){
-          fCCPageDataObj.challengeTitle = targetExists.innerText.trim();
-        }
-        // description
-        else if (targetSelector === targetSelectors[1]){
-          fCCPageDataObj.challengeDesc = targetExists.innerText.trim();
-        }
-        // tests
-        else if (targetSelector === targetSelectors[2]){
-          fCCPageDataObj.challengeTests = 'Tests\n' + targetExists.innerText.trim();
-        }    
-        found.add(targetSelector);
+  targetSelectors.forEach((targetSelector) => {
+    let targetExists = parent.querySelector(targetSelector);
+    if (targetExists instanceof HTMLElement){
+      // title
+      if (targetSelector === targetSelectors[0]){
+        fCCPageDataObj.challengeTitle = targetExists.innerHTML.trim();
       }
-    });
+      // description
+      else if (targetSelector === targetSelectors[1]){
+        fCCPageDataObj.challengeDesc = targetExists.innerHTML.trim();
+      }
+      // tests
+      else if (targetSelector === targetSelectors[2]){
+        let items = Array.from(targetExists.querySelectorAll('.test-output span:not(.sr-only)'));
+        //console.dir(items.map((el) => el.innerHTML.trim()));
 
-     // if targets don't exist, start observing for targets
-    if (found.size < targetSelectors.length)
-      targetsObserver.observe(parent, observeConfig);
-    else{
-      found.clear();
-      console.log('TARGETS FOUND FIRST TRY');
-      console.dir(fCCPageDataObj);
-    } 
+        fCCPageDataObj.challengeTests = '<h2>Tests</h2>\n' + '<ul>\n' +
+        items.map((el) => `<li>${el.innerHTML.trim()}</li>`).join("\n") +
+        '\n</ul>';
+      }    
+      found.add(targetSelector);
+    }
+  });
+
+    // if targets don't exist, start observing for targets
+  if (found.size < targetSelectors.length)
+    targetsObserver.observe(parent, observeConfig);
+  else {
+    found.clear();
+    console.log('TARGETS FOUND FIRST TRY');
+    console.dir(fCCPageDataObj);
+  } 
 }
 
 // Callback function to execute when mutations are observed
@@ -165,14 +167,14 @@ const modalCallback = (mutations, observer) => {
         if (!(node instanceof HTMLElement))
           continue;
         
-        // modal
+        // if modal, grab solution code and language
         if (node.matches(modalSelector)){
           console.log('HELLO FOUND MODAL');
 
           let codePanel = document.querySelector(solutionSelector);
           let language = document.querySelector(languageSelectors[0])?.getAttribute(languageSelectors[1])?.trim();
           fCCPageDataObj.solutionCode = codePanel?.innerText.trim();
-          fCCPageDataObj.language = language;
+          fCCPageDataObj.language = language?.toLowerCase() === 'javascript' ? 'js': 'py';
           
           console.dir(fCCPageDataObj);
 
