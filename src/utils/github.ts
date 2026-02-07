@@ -1,44 +1,52 @@
 import { Octokit, App } from "octokit";
-import { type CreateCommitOnBranchInput, type Commit, /* validate */ } from '@octokit/graphql-schema'
+import { type CreateCommitOnBranchInput, type Commit, Repository, Query, /* validate */ } from '@octokit/graphql-schema'
 import { localExtStorage } from '@webext-core/storage';
 import { PageDataObj } from "@/types/challenge";
 import { Base64 } from "js-base64";
 
-export { authenticateGithub, pushCommit };
+export { authenticateGithub, getRepoInfo, pushCommit };
 
 let octokit: null | Octokit = null;
+const githubAccObj = {
+  // owner name, connected repo, branch, authenticated?, 
+  owner: '',
+  repo: '',
+  branchToCommit: '',
+  branchToCommitHeadOid: '',
+  authenticated: false
+}
 
-async function authenticateGithub(){
-  const storedPAT = await localExtStorage.getItem('github_PAT');
-  if (!storedPAT){
-    await localExtStorage.setItem('github_PAT', import.meta.env.WXT_GITHUB_PAT_TOKEN);
-  }
+async function authenticateGithub(PAT = '', owner = '', repo = ''){
+  // const storedPAT = await localExtStorage.getItem('github_PAT');
+  // if (!storedPAT){
+  //   await localExtStorage.setItem('github_PAT', import.meta.env.WXT_GITHUB_PAT_TOKEN);
+  // }
 
   octokit = new Octokit({ 
     userAgent: "fCC-github-pusher/v0.0.0",
-    auth: `${import.meta.env.WXT_GITHUB_PAT_TOKEN}` 
+    auth: `${PAT || import.meta.env.WXT_GITHUB_PAT_TOKEN}` 
   });
 
   try {
     // authenticate and get username using PAT
-    const { data: { login:username } } = await octokit.rest.users.getAuthenticated();
-    console.log("Hello, %s", username);
+    const { data: { login } } = await octokit.rest.users.getAuthenticated();
+    console.log("Hello, %s", login);
 
-    // get branch head's oid and store in localExtStorage
-    const oid = getRepoInfo(username, "fCC-test-repo");
-    await localExtStorage.setItem('branchhead_oid', oid);
+    githubAccObj.owner = (owner || login);
+    githubAccObj.repo = (repo || 'fCC-test-repo'); // todo
     
-    return { username, octokit };
+    return { login, octokit };
 
   } catch (error: any) {
+    const status = error.status;
       // Catch authorization or network errors
-      console.error("Error:", error.message);  
+      console.error("Error:", error.message, status);  
   }
     
 }
 
 // query for repo main oid given the owner and repo name
-async function getRepoInfo(username: string, reponame: string){
+async function getRepoInfo(){
   console.log("GETTING REPO");
 
   try {
@@ -54,12 +62,13 @@ async function getRepoInfo(username: string, reponame: string){
       }
     `,
       {
-        owner: username,
-        repo: reponame
+        owner: githubAccObj.owner,
+        repo: githubAccObj.repo
       }
     );
 
     const oid = repo.repository.ref.target.oid;
+    githubAccObj.branchToCommitHeadOid = oid;
     await localExtStorage.setItem('branchhead_oid', oid);
 
     console.dir(oid);
@@ -73,15 +82,18 @@ async function getRepoInfo(username: string, reponame: string){
 
 }
 
-// attempt pushing commit given
-// repo's main branch oid
-async function pushCommit(obj: PageDataObj){
-  console.log("PUSHING COMMIT");
+function endWithNewline(str: string) {
+  if (str.endsWith('\n') || str.endsWith('\r\n')) { 
+    return str; 
+  } 
+  // If not, append a newline character 
+  return str + '\n'; 
+}
 
-  // build variables for mutation
+async function buildCreateCommitInput(obj: PageDataObj) {
   const input :CreateCommitOnBranchInput = {
     branch: { 
-      repositoryNameWithOwner: 'TikeDev/fCC-test-repo',
+      repositoryNameWithOwner: `${githubAccObj.owner}/${githubAccObj.repo}`,
       branchName: 'main'
     },
     expectedHeadOid: await localExtStorage.getItem('branchhead_oid'),
@@ -108,6 +120,17 @@ ${obj.challengeTitle.toLowerCase().replaceAll(' ', '_')}.${obj.language}`,
       headline: "Add solution - freeCodeCamp Daily Code Challenge"
     },  
   };
+
+  return input;
+}
+
+// attempt pushing commit given
+// repo's main branch oid
+async function pushCommit(obj: PageDataObj){
+  console.log("PUSHING COMMIT");
+
+  // build variables for mutation
+  const input = await buildCreateCommitInput(obj);
   const mutationString = 
     `mutation CreateCommit($input: CreateCommitOnBranchInput!){ 
       createCommitOnBranch(input: $input){

@@ -1,9 +1,9 @@
 import { defineExtensionMessaging } from '@webext-core/messaging';
-import PageDataObj from '@/types/challenge';
+import { PageDataObj } from '@/types/challenge';
 
 interface ProtocolMap {
   requestPlatformInfo() :string;
-  shareDataAndPushToGithub(data: PageDataObj) :string;
+  shareDataAndPushToGithub(data: PageDataObj) :void;
   pushToGithub(data: PageDataObj) :string;
   authenticateGithub() :string;
 }

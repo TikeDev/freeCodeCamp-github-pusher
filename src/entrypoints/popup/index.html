@@ -7,7 +7,28 @@
     <meta name="manifest.type" content="browser_action" />
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="./main.ts"></script>
+    <div id="auth-github">
+      <h1>Authenticate Github</h1>
+      <form>
+
+        <label>
+          PAT Token
+          <input value="" id="pat-input" type="text" name="PAT" maxlength="255">
+        </label>
+        <label>
+          Owner (Username)
+          <input value="TikeDev" id="owner-input" type="text" name="Owner">
+        </label>
+        <label>
+          Repo Name
+          <input value="fCC-test-repo" id="repo-input" type="text" name="Repo">
+        </label>
+
+        <button id="submit-btn" type="button">Submit Github Info</button>
+      </form>
+
+    </div>
+
+    <script type="module" src="./popup.ts"></script>
   </body>
 </html>

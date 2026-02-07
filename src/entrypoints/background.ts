@@ -1,7 +1,6 @@
 import { onMessage, sendMessage } from '@/utils/messaging';
-import { authenticateGithub, pushCommit } from '@/utils/github';
-import PageDataObj from '@/types/challenge';
-// import { localExtStorage } from '@webext-core/storage';
+import { authenticateGithub, getRepoInfo, pushCommit } from '@/utils/github';
+import { PageDataObj } from '@/types/challenge';
 
 
 export default defineBackground(() => {
@@ -28,8 +27,9 @@ export default defineBackground(() => {
 	});
 
 	// authenticate github user
-	onMessage('authenticateGithub',  async  (message) => {
+	onMessage('authenticateGithub',  async (message) => {
 		const { username, octokit } = await authenticateGithub();
+		await getRepoInfo();
 		console.log(username);
 		console.dir(octokit);
 		return octokit;

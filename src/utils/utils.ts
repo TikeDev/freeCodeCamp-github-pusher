@@ -173,7 +173,7 @@ const modalCallback = (mutations, observer) => {
 
           let codePanel = document.querySelector(solutionSelector);
           let language = document.querySelector(languageSelectors[0])?.getAttribute(languageSelectors[1])?.trim();
-          fCCPageDataObj.solutionCode = codePanel?.innerText.trim();
+          fCCPageDataObj.solutionCode = codePanel?.innerText.trim()+'\n';
           fCCPageDataObj.language = language?.toLowerCase() === 'javascript' ? 'js': 'py';
           
           console.dir(fCCPageDataObj);
