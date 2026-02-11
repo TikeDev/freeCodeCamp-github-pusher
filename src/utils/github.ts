@@ -16,67 +16,80 @@ const githubAccObj = {
   authenticated: false
 }
 
-async function authenticateGithub(PAT = '', owner = '', repo = ''){
-  // const storedPAT = await localExtStorage.getItem('github_PAT');
-  // if (!storedPAT){
-  //   await localExtStorage.setItem('github_PAT', import.meta.env.WXT_GITHUB_PAT_TOKEN);
-  // }
+async function authenticateGithub(PAT = ''){
 
   octokit = new Octokit({ 
     userAgent: "fCC-github-pusher/v0.0.0",
-    auth: `${PAT || import.meta.env.WXT_GITHUB_PAT_TOKEN}` 
+    auth: (PAT || import.meta.env.WXT_GITHUB_PAT_TOKEN)
   });
 
   try {
     // authenticate and get username using PAT
     const { data: { login } } = await octokit.rest.users.getAuthenticated();
-    console.log("Hello, %s", login);
+    if (login){
+      console.log("Hello, %s", login);
+    }
 
-    githubAccObj.owner = (owner || login);
-    githubAccObj.repo = (repo || 'fCC-test-repo'); // todo
-    
-    return { login, octokit };
+    // save owner info
+    if (login){
+      githubAccObj.owner = login;
+      await localExtStorage.setItem('pat_token', PAT);
+      await localExtStorage.setItem('owner', login);
+    }    
 
-  } catch (error: any) {
+    return login;
+  } 
+  catch (error: any) {
     const status = error.status;
-      // Catch authorization or network errors
-      console.error("Error:", error.message, status);  
+    // Catch authorization or network errors
+    console.error("Authentication failed\n", `ERROR ${error.status}:`, error.response?.data.message || error?.message);  
   }
     
 }
 
 // query for repo main oid given the owner and repo name
-async function getRepoInfo(){
+async function getRepoInfo(owner, repo){
   console.log("GETTING REPO");
 
-  try {
-    const repo = await octokit?.graphql(
-      `query($owner: String!, $repo: String!) {
-        repository(owner: $owner, name: $repo) {
-          ref(qualifiedName: "refs/heads/main") {
-            target {
-              oid
-            }
+  const query =
+    `query($owner: String!, $repo: String!) {
+      repository(owner: $owner, name: $repo) {
+        ref(qualifiedName: "refs/heads/main") {
+          target {
+            oid
           }
         }
       }
-    `,
+    }`;
+
+  try {
+    const response = await octokit?.graphql(
+      query,
       {
-        owner: githubAccObj.owner,
-        repo: githubAccObj.repo
+        owner,
+        repo
       }
     );
 
-    const oid = repo.repository.ref.target.oid;
-    githubAccObj.branchToCommitHeadOid = oid;
-    await localExtStorage.setItem('branchhead_oid', oid);
+    console.log("GOT THE REPO QUERY");
+    const oid = response?.repository.ref.target.oid;
+
+    // save repo info
+    if (oid){
+      await localExtStorage.setItem('repo', repo);    
+      await localExtStorage.setItem('branchhead_oid', oid);
+      githubAccObj.repo = repo;
+      githubAccObj.branchToCommitHeadOid = oid;
+    }
 
     console.dir(oid);
-
     return oid;
-
-  } catch (error) {
-    console.log(error);
+  } 
+  catch (error) {
+    console.error("Repo Query Failed\n", 
+      "Messages:", error.errors.map(e => e.message),
+      "\nProvided values:", (error?.request?.variables || "none")
+    );
   }
     
 

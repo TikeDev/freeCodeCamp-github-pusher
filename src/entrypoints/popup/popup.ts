@@ -17,20 +17,26 @@ async function handleAuthSubmission(){
   const owner = ownerInput?.value.trim();
   const repo = repoInput?.value.trim();
 
-  if (!pat || !owner || !repo){
-    console.log('RETURNIN');
+  if (/* !pat || */ !repo){
+    console.log('MISSING A FIELD');
     return;
   }
     
-  const login = await authenticateGithub(pat, owner, repo);
-  if (login){
-    await localExtStorage.setItem('pat_token', pat);
-    await localExtStorage.setItem('owner', owner);
-    await localExtStorage.setItem('repo', repo);
-  }
-  else {
+  const login = await authenticateGithub(pat);
+
+  if (!login) {
     console.log("SOMETHING W THE AUTH ISN'T RIGHT");
+    // TODO add user hint to popup
+    return;
   }
   console.log("LOGIN ACQUIRED", login);
+
+  const oid = await getRepoInfo(login, repo);
+  if (!oid) { 
+    console.log("SOMETHING W THE REPO QUERY ISN'T RIGHT");
+    // TODO add user hint to popup
+    return;
+  }
+
 
 }

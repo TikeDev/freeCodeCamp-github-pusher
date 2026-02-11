@@ -30,8 +30,7 @@ export default defineBackground(() => {
 	onMessage('authenticateGithub',  async (message) => {
 		const { username, octokit } = await authenticateGithub();
 		await getRepoInfo();
-		console.log(username);
-		console.dir(octokit);
+
 		return octokit;
 	});	
 
