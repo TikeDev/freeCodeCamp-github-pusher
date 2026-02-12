@@ -14,7 +14,7 @@ submitBtn?.addEventListener('click', handleAuthSubmission);
 async function handleAuthSubmission(){
   console.log('LESS GO HANDLE');
   const pat = patInput?.value.trim();
-  const owner = ownerInput?.value.trim();
+  //const owner = ownerInput?.value.trim();
   const repo = repoInput?.value.trim();
 
   if (/* !pat || */ !repo){
@@ -29,6 +29,7 @@ async function handleAuthSubmission(){
     // TODO add user hint to popup
     return;
   }
+  ownerInput.value = `${login}`;
   console.log("LOGIN ACQUIRED", login);
 
   const oid = await getRepoInfo(login, repo);
