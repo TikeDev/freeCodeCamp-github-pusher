@@ -182,13 +182,15 @@ async function pushCommit(obj: PageDataObj){
     console.log(commit);
     return;
 
-  } catch (error) {
+  }
+  catch (error) {
     console.log('COMMIT ERROR')
     console.dir(error);
-    if (error.errors)   
-      console.dir(error.errors);
-  } 
- 
+    console.error("Pushing Commit Failed\n", 
+      "Messages:", error.errors.map(e => e.message),
+      "\nProvided values:", (error?.request?.variables || "none")
+    );
+  }
   return;
 }
 
