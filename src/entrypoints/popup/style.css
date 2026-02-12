@@ -58,6 +58,14 @@ input {
   margin: auto;
   width:90%;
 }
+input:disabled {
+  color: rgb(170, 170, 170);
+  background-color: rgb(50,50,50);
+  font-weight: 700;
+}
+.disabled {
+  color: rgb(160, 160, 160);
+}
 
 button {
   border-radius: 8px;
